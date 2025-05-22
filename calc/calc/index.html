@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classic Calculator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="calculator">
+    <div class="display-container">
+      <div class="calculation" id="calculation"></div>
+      <div class="current-input" id="display">0</div>
+    </div>
+    
+    <!-- Special buttons row -->
+    <div class="special-buttons">
+      <button class="btn special-btn">(</button>
+      <button class="btn special-btn">)</button>
+      <button class="btn special-btn">%</button>
+      <button class="btn special-btn">^</button>
+      <button class="btn special-btn">!</button>
+      <button class="btn special-btn backspace-btn">⌫</button>
+    </div>
+    
+    <!-- Main calculator buttons -->
+    <div class="buttons">
+      <button class="btn">AC</button>
+      <button class="btn">0</button>
+      <button class="btn">%</button>
+      <button class="btn operator">÷</button>
+      
+      <button class="btn">7</button>
+      <button class="btn">8</button>
+      <button class="btn">9</button>
+      <button class="btn operator">×</button>
+      
+      <button class="btn">4</button>
+      <button class="btn">5</button>
+      <button class="btn">6</button>
+      <button class="btn operator">−</button>
+      
+      <button class="btn">1</button>
+      <button class="btn">2</button>
+      <button class="btn">3</button>
+      <button class="btn operator">+</button>
+      
+      <button class="btn zero">0</button>
+      <button class="btn">.</button>
+      <button class="btn equals">=</button>
+    </div>
+    <div class="signature">Made by Nalukwago Zainah</div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const calculationDisplay = document.getElementById('calculation');
+    let currentInput = '0';
+    let calculationExpression = '';
+    let firstOperand = null;
+    let operator = null;
+    let waitingForSecondOperand = false;
+    
+    function updateDisplay() {
+      display.textContent = currentInput;
+      calculationDisplay.textContent = calculationExpression;
+    }
+    
+    function inputDigit(digit) {
+      if (waitingForSecondOperand) {
+        currentInput = digit;
+        waitingForSecondOperand = false;
+        calculationExpression += ' ' + digit;
+      } else {
+        currentInput = currentInput === '0' ? digit : currentInput + digit;
+        calculationExpression = calculationExpression === '' ? digit : calculationExpression + digit;
+      }
+    }
+    
+    function inputDecimal() {
+      if (waitingForSecondOperand) {
+        currentInput = '0.';
+        calculationExpression += ' 0.';
+        waitingForSecondOperand = false;
+        return;
+      }
+      
+      if (!currentInput.includes('.')) {
+        currentInput += '.';
+        calculationExpression += '.';
+      }
+    }
+    
+    function handleBackspace() {
+      if (currentInput.length === 1) {
+        currentInput = '0';
+      } else {
+        currentInput = currentInput.slice(0, -1);
+      }
+      calculationExpression = calculationExpression.slice(0, -1);
+      if (calculationExpression === '') {
+        calculationExpression = '0';
+      }
+    }
+    
+    function handleOperator(nextOperator) {
+      const inputValue = parseFloat(currentInput);
+      
+      if (operator && !waitingForSecondOperand) {
+        const result = calculate();
+        currentInput = String(result);
+        firstOperand = result;
+        calculationExpression = currentInput;
+      } else {
+        firstOperand = inputValue;
+      }
+      
+      if (['+', '−', '×', '÷', '%'].includes(calculationExpression.slice(-1))) {
+        calculationExpression = calculationExpression.slice(0, -1) + nextOperator;
+      } else {
+        calculationExpression += ' ' + nextOperator;
+      }
+      
+      waitingForSecondOperand = true;
+      operator = nextOperator;
+    }
+    
+    function handleSpecialButton(value) {
+      switch(value) {
+        case '(':
+        case ')':
+          calculationExpression += value;
+          currentInput = value;
+          waitingForSecondOperand = false;
+          break;
+        case '%':
+          if (!isNaN(currentInput)) {
+            currentInput = (parseFloat(currentInput) / 100).toString();
+            calculationExpression = currentInput;
+          }
+          break;
+        case '^':
+          calculationExpression += '^';
+          currentInput = '^';
+          break;
+        case '!':
+          if (!isNaN(currentInput) && currentInput.indexOf('.') === -1) {
+            let num = parseInt(currentInput);
+            let result = 1;
+            for (let i = 2; i <= num; i++) {
+              result *= i;
+            }
+            currentInput = result.toString();
+            calculationExpression = currentInput;
+          }
+          break;
+      }
+    }
+    
+    function calculate() {
+      try {
+        let expr = calculationExpression
+          .replace(/×/g, '*')
+          .replace(/÷/g, '/')
+          .replace(/−/g, '-')
+          .replace(/\^/g, '**')
+          .replace(/(\d+)!/g, function(fact) {
+            let num = parseInt(fact);
+            let result = 1;
+            for (let i = 2; i <= num; i++) {
+              result *= i;
+            }
+            return result;
+          });
+        
+        expr = expr.replace(/(\d+(\.\d+)?)%/g, function(match, p1) {
+          return '(' + p1 + '/100)';
+        });
+        
+        const result = eval(expr);
+        return parseFloat(result.toFixed(10));
+      } catch (e) {
+        return 'Error';
+      }
+    }
+    
+    function handleEquals() {
+      if (calculationExpression === '') return;
+      
+      const result = calculate();
+      if (result === 'Error') {
+        currentInput = 'Error';
+        calculationExpression = '';
+      } else {
+        currentInput = String(result);
+        calculationExpression = currentInput;
+      }
+      firstOperand = null;
+      operator = null;
+      waitingForSecondOperand = false;
+    }
+    
+    function resetCalculator() {
+      currentInput = '0';
+      calculationExpression = '';
+      firstOperand = null;
+      operator = null;
+      waitingForSecondOperand = false;
+    }
+    
+    document.querySelectorAll('.btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const value = button.textContent;
+        
+        if (!isNaN(value)) {
+          inputDigit(value);
+        } else if (value === '.') {
+          inputDecimal();
+        } else if (value === 'AC') {
+          resetCalculator();
+        } else if (value === '=') {
+          handleEquals();
+        } else if (value === '⌫') {
+          handleBackspace();
+        } else if (['+', '−', '×', '÷'].includes(value)) {
+          handleOperator(value);
+        } else if (['(', ')', '%', '^', '!'].includes(value)) {
+          handleSpecialButton(value);
+        }
+        
+        updateDisplay();
+      });
+    });
+  </script>
+</body>
+</html>
